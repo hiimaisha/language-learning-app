@@ -77,25 +77,35 @@ with custom_tab:
   st.caption("Machine translation can miss context. Check important wording with a fluent speaker.")
 with quiz_tab:
  st.subheader(f"Phrase quiz · {lang_name}")
- if "quiz_phrase" not in st.session_state:st.session_state.quiz_phrase=random.choice(PHRASES)[1]
- q=st.session_state.quiz_phrase
  if st.session_state.get("quiz_target")!=target or "quiz_options" not in st.session_state:
-  with st.spinner("Preparing translation choices…"):
-   try:
-    distractors=random.sample([p[1] for p in PHRASES if p[1]!=q],3)
-    choices=[translate(x,target) for x in distractors]+[translate(q,target)];random.shuffle(choices)
-    st.session_state.quiz_options=choices;st.session_state.quiz_answer=translate(q,target);st.session_state.quiz_target=target;st.session_state.quiz_feedback=""
-   except Exception:st.error("Could not load quiz translations. Check internet and retry.");choices=[]
- else:choices=st.session_state.quiz_options
- st.markdown(f'<div class="study-card"><small>WHAT DOES THIS MEAN?</small><h2 style="color:#252552">{q}</h2></div>',unsafe_allow_html=True)
- if choices:
-  choice=st.radio("Choose the correct translation",choices,key=f"quiz_choice_{target}_{q}")
+  st.info("Prepare a quiz when you're ready. Translations load only after you click the button.")
+  if st.button("Prepare quiz",type="primary",use_container_width=True):
+   q=st.session_state.get("quiz_phrase",random.choice(PHRASES)[1])
+   with st.spinner("Preparing translation choices…"):
+    try:
+     distractors=random.sample([p[1] for p in PHRASES if p[1]!=q],3)
+     choices=[translate(x,target) for x in distractors]+[translate(q,target)]
+     random.shuffle(choices)
+     st.session_state.quiz_phrase=q
+     st.session_state.quiz_options=choices
+     st.session_state.quiz_answer=translate(q,target)
+     st.session_state.quiz_target=target
+     st.session_state.quiz_feedback=""
+     st.rerun()
+    except Exception:
+     st.error("Could not load quiz translations. Check your internet connection and retry.")
+ else:
+  q=st.session_state.quiz_phrase
+  st.markdown(f'<div class="study-card"><small>WHAT DOES THIS MEAN?</small><h2 style="color:#252552">{q}</h2></div>',unsafe_allow_html=True)
+  choice=st.radio("Choose the correct translation",st.session_state.quiz_options,key=f"quiz_choice_{target}_{q}")
   if st.button("Check answer",type="primary",use_container_width=True):
-   ok=choice==st.session_state.quiz_answer;record(target,q,ok);st.session_state.quiz_feedback="Correct! Nice work." if ok else "Not quite. Correct translation: "+st.session_state.quiz_answer
-  if st.session_state.get("quiz_feedback"):st.info(st.session_state.quiz_feedback)
+   ok=choice==st.session_state.quiz_answer
+   record(target,q,ok)
+   st.session_state.quiz_feedback="Correct! Nice work." if ok else "Not quite. Correct translation: "+st.session_state.quiz_answer
+  if st.session_state.get("quiz_feedback"): st.info(st.session_state.quiz_feedback)
   if st.button("Next question",use_container_width=True):
    st.session_state.quiz_phrase=random.choice([p[1] for p in PHRASES if p[1]!=q])
-   for k in ["quiz_options","quiz_answer","quiz_target","quiz_feedback"]:st.session_state.pop(k,None)
+   for k in ["quiz_options","quiz_answer","quiz_target","quiz_feedback"]: st.session_state.pop(k,None)
    st.rerun()
 with progress_tab:
  with db() as con:
