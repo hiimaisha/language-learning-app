@@ -1,5 +1,7 @@
 import random, sqlite3
 from pathlib import Path
+from io import BytesIO
+from gtts import gTTS
 import streamlit as st
 from deep_translator import GoogleTranslator
 
@@ -7,7 +9,7 @@ st.set_page_config(page_title="Polyglot Language Lab", page_icon="🌍", layout=
 DB=Path(__file__).with_name("language_progress.db")
 LANG_TEXT="""Abkhaz|ab;Afrikaans|af;Albanian|sq;Amharic|am;Arabic|ar;Armenian|hy;Assamese|as;Aymara|ay;Azerbaijani|az;Bambara|bm;Basque|eu;Belarusian|be;Bengali|bn;Bosnian|bs;Bulgarian|bg;Burmese|my;Catalan|ca;Cebuano|ceb;Chinese (Simplified)|zh-CN;Chinese (Traditional)|zh-TW;Corsican|co;Croatian|hr;Czech|cs;Danish|da;Dhivehi|dv;Dogri|doi;Dutch|nl;English|en;Esperanto|eo;Estonian|et;Filipino|tl;Finnish|fi;French|fr;Frisian|fy;Galician|gl;Georgian|ka;German|de;Greek|el;Gujarati|gu;Haitian Creole|ht;Hausa|ha;Hawaiian|haw;Hebrew|iw;Hindi|hi;Hmong|hmn;Hungarian|hu;Icelandic|is;Igbo|ig;Indonesian|id;Irish|ga;Italian|it;Japanese|ja;Javanese|jw;Kannada|kn;Kazakh|kk;Khmer|km;Kinyarwanda|rw;Korean|ko;Kurdish (Kurmanji)|ku;Kyrgyz|ky;Lao|lo;Latin|la;Latvian|lv;Lithuanian|lt;Luxembourgish|lb;Macedonian|mk;Maithili|mai;Malagasy|mg;Malay|ms;Malayalam|ml;Maltese|mt;Maori|mi;Marathi|mr;Mongolian|mn;Nepali|ne;Norwegian|no;Odia (Oriya)|or;Oromo|om;Pashto|ps;Persian|fa;Polish|pl;Portuguese|pt;Punjabi|pa;Romanian|ro;Russian|ru;Samoan|sm;Sanskrit|sa;Scots Gaelic|gd;Serbian|sr;Sesotho|st;Shona|sn;Sindhi|sd;Sinhala|si;Slovak|sk;Slovenian|sl;Somali|so;Spanish|es;Sundanese|su;Swahili|sw;Swedish|sv;Tajik|tg;Tamil|ta;Tatar|tt;Telugu|te;Thai|th;Turkish|tr;Turkmen|tk;Ukrainian|uk;Urdu|ur;Uyghur|ug;Uzbek|uz;Vietnamese|vi;Welsh|cy;Xhosa|xh;Yiddish|yi;Yoruba|yo;Zulu|zu;Acehnese|ace;Balinese|ban;Bashkir|ba;Bhojpuri|bho;Chichewa|ny;Ewe|ee;Guarani|gn;Ilocano|ilo;Konkani|gom;Krio|kri;Lingala|ln;Luganda|lg;Meiteilon (Manipuri)|mni-Mtei;Mizo|lus;Quechua|qu;Sepedi|nso;Tigrinya|ti;Tsonga|ts;Twi|ak"""
 LANGUAGES=dict(item.split("|",1) for item in LANG_TEXT.split(";"))
-PHRASES=[("Greetings","Hello"),("Greetings","Good morning"),("Greetings","How are you?"),("Greetings","Nice to meet you."),("Everyday","Please"),("Everyday","Thank you"),("Everyday","You're welcome"),("Everyday","I don't understand."),("Everyday","Could you repeat that, please?"),("Everyday","My name is…"),("Travel","Where is the station?"),("Travel","How much does this cost?"),("Travel","Where is the bathroom?"),("Travel","I need help."),("Food","Water, please."),("Food","The food is delicious."),("Food","I am vegetarian."),("Study","What does this word mean?"),("Study","Can you explain this?"),("Study","I am learning this language.")]
+PHRASES=[("Vocabulary","Book"),("Vocabulary","Water"),("Vocabulary","Friend"),("Vocabulary","School"),("Vocabulary","Time"),("Vocabulary","Language"),("Grammar","I am learning this language."),("Grammar","Do you speak English?"),("Grammar","I went there yesterday."),("Grammar","I will study tomorrow."),("Grammar","Could you help me, please?"),("Greetings","Hello"),("Greetings","Good morning"),("Greetings","How are you?"),("Greetings","Nice to meet you."),("Everyday","Please"),("Everyday","Thank you"),("Everyday","You're welcome"),("Everyday","I don't understand."),("Everyday","Could you repeat that, please?"),("Everyday","My name is…"),("Travel","Where is the station?"),("Travel","How much does this cost?"),("Travel","Where is the bathroom?"),("Travel","I need help."),("Food","Water, please."),("Food","The food is delicious."),("Food","I am vegetarian."),("Study","What does this word mean?"),("Study","Can you explain this?"),("Study","I am learning this language.")]
 st.markdown("""<style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
 html,body,[class*="css"]{font-family:'DM Sans',sans-serif}.stApp{background:linear-gradient(140deg,#f7f8ff,#f1fbfa 70%,#f8f6ff)}.block-container{max-width:1200px;padding-top:2rem}
@@ -53,7 +55,12 @@ with learn_tab:
  with c:
   if st.button("Next →",disabled=len(rows)<2,use_container_width=True):st.session_state.phrase_idx=(idx+1)%len(rows);st.rerun()
  tr=st.session_state.get("tr_"+target+"_"+phrase)
- if tr:st.success(f"{lang_name}: {tr}")
+ if tr:
+  st.success(f"{lang_name}: {tr}")
+  if st.button("🔊 Hear pronunciation",key=f"audio_{target}_{phrase}"):
+   try:
+    audio=BytesIO(); gTTS(text=tr,lang=target).write_to_fp(audio); st.audio(audio.getvalue(),format="audio/mp3")
+   except Exception: st.info("Audio pronunciation is not available for this language right now.")
  st.markdown("#### Translate your own phrase")
  custom=st.text_input("Word, phrase, or sentence",placeholder="Type anything you want to learn")
  if st.button("Translate my phrase",type="primary"):
