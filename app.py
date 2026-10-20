@@ -89,7 +89,7 @@ with quiz_tab:
  else:choices=st.session_state.quiz_options
  st.markdown(f'<div class="study-card"><small>WHAT DOES THIS MEAN?</small><h2 style="color:#252552">{q}</h2></div>',unsafe_allow_html=True)
  if choices:
-  choice=st.radio("Choose the correct translation",choices,key="quiz_choice")
+  choice=st.radio("Choose the correct translation",choices,key=f"quiz_choice_{target}_{q}")
   if st.button("Check answer",type="primary",use_container_width=True):
    ok=choice==st.session_state.quiz_answer;record(target,q,ok);st.session_state.quiz_feedback="Correct! Nice work." if ok else "Not quite. Correct translation: "+st.session_state.quiz_answer
   if st.session_state.get("quiz_feedback"):st.info(st.session_state.quiz_feedback)
